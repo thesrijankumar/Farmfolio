@@ -1,7 +1,10 @@
-require('dotenv').config()
-const express = require('express');
+import dotenv from 'dotenv';
+dotenv.config();
+import express from 'express';
+import connectDb from './src/config/connectDb.js';
 
 const app = express();
+connectDb();
 
 app.get('/', (req, res) => {
     res.send("Greetings from Backend !!~")

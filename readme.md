@@ -3,15 +3,9 @@
 
 # File Tree: Farmfolio
 
-**Generated:** 7/13/2026, 12:07:12 AM
 
 ```
-├── 📁 backend
-│   ├── ⚙️ .gitignore
-│   ├── 📄 index.js
-│   ├── ⚙️ package-lock.json
-│   └── ⚙️ package.json
-├── 📁 frontend
+├── 📁 client
 │   ├── 📁 public
 │   │   ├── 🖼️ favicon.svg
 │   │   └── 🖼️ icons.svg
@@ -31,5 +25,17 @@
 │   ├── ⚙️ package-lock.json
 │   ├── ⚙️ package.json
 │   └── 📄 vite.config.js
+├── 📁 server
+│   ├── 📁 src
+│   │   ├── 📁 config
+│   │   │   └── 📄 connectDb.js
+│   │   ├── 📁 db
+│   │   ├── 📁 routes
+│   │   └── 📁 util
+│   │       └── 📄 ApiError.js
+│   ├── ⚙️ .gitignore
+│   ├── 📄 index.js
+│   ├── ⚙️ package-lock.json
+│   └── ⚙️ package.json
 └── 📝 readme.md
 ```
