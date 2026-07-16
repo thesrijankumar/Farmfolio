@@ -1,7 +1,7 @@
 import uuid
 from typing import Any, Optional
 
-# In-memory for now — resets on restart, fine for a hackathon demo.
+# In-memory for now — resets on restart,
 # Swap this file for real DB calls later; keep these 3 function signatures
 # the same so nothing else in the app needs to change.
 

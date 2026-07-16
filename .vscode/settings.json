@@ -1,0 +1,4 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/Farmfolio/agent-service/venv/bin/python",
+  "python.analysis.extraPaths": ["${workspaceFolder}/Farmfolio/agent-service"]
+}

@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+import { resolve } from "path";
+dotenv.config({ path: resolve(import.meta.dir, "../.env") });
 import { Elysia, t } from "elysia";
 import { cors } from "@elysiajs/cors";
 import { getNasaPowerData } from "./services/nasaPower";
@@ -10,7 +13,7 @@ interface SummarizeResponse {
   sessionId: string;
 }
 
-const AGENT_SERVICE_URL = process.env.AGENT_SERVICE_URL ?? "http://localhost:8000";
+const AGENT_SERVICE_URL = process.env.AGENT_SERVICE_URL ?? "http://localhost:8001";
 
 new Elysia()
   .use(cors())
@@ -70,8 +73,9 @@ new Elysia()
 
   .post(
     "/api/ask",
-    async ({ body }) => {
+    async ({ body, set }) => {
       try {
+        console.log("Asking agent service:", body);
         const res = await fetch(`${AGENT_SERVICE_URL}/chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -81,12 +85,14 @@ new Elysia()
         if (!res.ok) throw new Error(`Agent error: ${res.status}`);
         return res.json();
       } catch (err: any) {
+        console.error("Agent error in /api/ask:", err);
+        set.status = 502;
         return { error: "Agent service unavailable", detail: err.message };
       }
     },
     { body: t.Object({ sessionId: t.String(), question: t.String() }) }
   )
 
-  .listen(3000);
+  .listen(process.env.PORT ?? 3000);
 
-console.log("✅ Data service running on http://localhost:3000");
+console.log(`✅ Data service running on http://localhost:${process.env.PORT ?? 3000}`);

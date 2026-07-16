@@ -1,4 +1,6 @@
+from typing import cast
 from fastapi import APIRouter, HTTPException
+from openai.types.chat import ChatCompletionMessageParam
 from app.models import ChatRequest, ChatResponse
 from app.services.llm_client import client, MODEL
 from app.services.session_store import get_session, append_message
@@ -8,17 +10,15 @@ router = APIRouter()
 
 def build_system_prompt(session: dict) -> str:
     return (
-        "You are a farming assistant helping a farmer understand their field's "
+        "You are an expert agronomy assistant helping a farmer understand their field's "
         "satellite and climate data. Here is the field data you have available:\n\n"
         f"{session['farm_data']}\n\n"
         f"Here is the summary already given to the farmer:\n{session['summary_text']}\n\n"
         "Rules:\n"
-        "- Only answer using the data provided above. Never invent numbers, forecasts, "
-        "or facts not present in this data.\n"
-        "- If the farmer asks something this data cannot answer, say plainly that you "
-        "don't have that information, rather than guessing.\n"
-        "- Do not give directive advice unless explicitly asked for your opinion.\n"
-        "- Keep answers short and in plain language."
+        "- Use the provided field data as the factual basis for the current conditions.\n"
+        "- You may use your broad agronomic knowledge to suggest suitable crops, irrigation strategies, and best practices based on this data.\n"
+        "- If asked about something completely unrelated to farming or the data, gently steer the conversation back to the field.\n"
+        "- Keep answers concise, practical, and in plain language."
     )
 
 
@@ -29,8 +29,13 @@ async def chat(req: ChatRequest):
         raise HTTPException(status_code=404, detail="Session not found or expired")
 
     system_prompt = build_system_prompt(session)
-    messages = [{"role": "system", "content": system_prompt}]
-    messages += [{"role": m["role"], "content": m["content"]} for m in session["conversation"]]
+
+    messages: list[ChatCompletionMessageParam] = [
+        {"role": "system", "content": system_prompt}
+    ]
+    messages += [
+        {"role": m["role"], "content": m["content"]} for m in session["conversation"]
+    ]
     messages.append({"role": "user", "content": req.question})
 
     try:

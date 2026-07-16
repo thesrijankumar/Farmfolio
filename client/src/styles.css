@@ -1,0 +1,115 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-serif: "Fraunces", ui-serif, Georgia, serif;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 10px;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-forest: var(--forest);
+  --color-forest-deep: var(--forest-deep);
+  --color-sage: var(--sage);
+  --color-moss: var(--moss);
+  --color-cream: var(--cream);
+  --color-ink: var(--ink);
+}
+
+:root {
+  /* Green + off-white palette */
+  --forest-deep: oklch(0.32 0.06 155);       /* ~ #1B4332 deep forest */
+  --forest: oklch(0.42 0.08 155);            /* ~ #2D6A4F primary */
+  --moss: oklch(0.62 0.09 150);              /* success / mid */
+  --sage: oklch(0.86 0.03 150);              /* borders / dividers */
+  --cream: oklch(0.985 0.008 95);            /* ~ #FAFAF7 background */
+  --ink: oklch(0.22 0.015 250);              /* near-black body text */
+
+  --radius: 4px;
+  --background: var(--cream);
+  --foreground: var(--ink);
+  --card: oklch(1 0 0);
+  --card-foreground: var(--ink);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--ink);
+  --primary: var(--forest);
+  --primary-foreground: var(--cream);
+  --secondary: oklch(0.955 0.012 130);
+  --secondary-foreground: var(--forest-deep);
+  --muted: oklch(0.96 0.008 130);
+  --muted-foreground: oklch(0.48 0.02 200);
+  --accent: oklch(0.94 0.03 150);
+  --accent-foreground: var(--forest-deep);
+  --destructive: oklch(0.52 0.19 28);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: var(--sage);
+  --input: var(--sage);
+  --ring: var(--forest);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html, body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    letter-spacing: -0.015em;
+  }
+
+  /* Big numeric display for hero data */
+  .stat-num {
+    font-family: var(--font-serif);
+    font-feature-settings: "tnum", "lnum";
+    font-weight: 400;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+
+  ::selection {
+    background: var(--forest);
+    color: var(--cream);
+  }
+}
+
+@utility rule-t {
+  border-top: 1px solid var(--color-border);
+}
+@utility rule-b {
+  border-bottom: 1px solid var(--color-border);
+}
