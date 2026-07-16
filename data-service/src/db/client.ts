@@ -7,9 +7,11 @@ import * as schema from "./schema";
 
 const client = postgres(process.env.DATABASE_URL as string, {
   ssl: "require",
-  max: 10,
+  max: 3,
   idle_timeout: 20,
   connect_timeout: 30,
+  max_lifetime: 1800,
   prepare: false,
+  fetch_types: false,
 });
 export const db = drizzle(client, { schema });

@@ -17,11 +17,16 @@ export async function createUser(email: string, password: string) {
 }
 
 export async function verifyUser(email: string, password: string) {
-  const [user] = await db.select().from(users).where(eq(users.email, email));
-  if (!user) throw new Error("Invalid credentials");
+  try {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    if (!user) throw new Error("Invalid credentials");
 
-  const valid = await Bun.password.verify(password, user.passwordHash);
-  if (!valid) throw new Error("Invalid credentials");
+    const valid = await Bun.password.verify(password, user.passwordHash);
+    if (!valid) throw new Error("Invalid credentials");
 
-  return { id: user.id, email: user.email };
+    return { id: user.id, email: user.email };
+  } catch (e: any) {
+    console.error("DB QUERY ERROR:", e, e.cause || "");
+    throw e;
+  }
 }
