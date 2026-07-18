@@ -1,6 +1,5 @@
-import dotenv from "dotenv";
-import { resolve } from "path";
-dotenv.config({ path: resolve(import.meta.dir, "../.env") });
+// ⚠️ This MUST be the very first import — loads .env before any other module runs
+import "./env";
 import { Elysia, t } from "elysia";
 import { cors } from "@elysiajs/cors";
 import { getNasaPowerData } from "./services/nasaPower";

@@ -1,11 +1,13 @@
 from fastapi import APIRouter, HTTPException
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 from app.models import SummarizeRequest, SummarizeResponse
-from app.services.llm_client import client, MODEL
+from app.services.llm_client import llm
 from app.services.session_store import create_session
 
 router = APIRouter()
 
-SUMMARY_SYSTEM_PROMPT = (
+_SYSTEM_PROMPT = (
     "You are an agricultural data assistant. You will be given raw satellite and "
     "climate data for a farmer's field (soil moisture, temperature, rainfall, "
     "vegetation index, etc.). Write a short, plain-language summary — 3 to 5 "
@@ -17,23 +19,24 @@ SUMMARY_SYSTEM_PROMPT = (
     "- If a value is missing or null, say the data wasn't available rather than skipping it silently."
 )
 
+# LCEL chain: prompt → llm → plain string
+_prompt = ChatPromptTemplate.from_messages([
+    ("system", _SYSTEM_PROMPT),
+    ("human", "Here is the field data:\n{farm_data}"),
+])
+
+_chain = _prompt | llm | StrOutputParser()
+
 
 @router.post("/summarize", response_model=SummarizeResponse)
 async def summarize(req: SummarizeRequest):
     farm_data = req.model_dump()
 
     try:
-        response = await client.chat.completions.create(
-            model=MODEL,
-            messages=[
-                {"role": "system", "content": SUMMARY_SYSTEM_PROMPT},
-                {"role": "user", "content": f"Here is the field data:\n{farm_data}"},
-            ],
-        )
+        summary_text = await _chain.ainvoke({"farm_data": farm_data})
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"AI summary generation failed: {e}")
 
-    summary_text = response.choices[0].message.content
     if not summary_text:
         raise HTTPException(status_code=502, detail="AI returned an empty summary")
 

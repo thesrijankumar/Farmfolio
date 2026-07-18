@@ -2,10 +2,14 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
 
-// Environment variables will be injected by Bun or the production environment
-// If DATABASE_URL is missing, postgres will throw an error on connection
+const dbUrl = process.env.DATABASE_URL;
+if (!dbUrl) {
+  throw new Error(
+    "❌ DATABASE_URL is not set. Make sure env.ts is imported FIRST in index.ts and your .env file exists."
+  );
+}
 
-const client = postgres(process.env.DATABASE_URL as string, {
+const client = postgres(dbUrl, {
   ssl: "require",
   max: 3,
   idle_timeout: 20,
@@ -14,4 +18,5 @@ const client = postgres(process.env.DATABASE_URL as string, {
   prepare: false,
   fetch_types: false,
 });
+
 export const db = drizzle(client, { schema });
