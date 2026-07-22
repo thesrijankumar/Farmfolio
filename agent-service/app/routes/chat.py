@@ -7,7 +7,7 @@ from app.services.session_store import get_session, get_chat_history
 
 router = APIRouter()
 
-_SYSTEM_PROMPT = (
+_SYSTEM_PROMPT_EN = (
     "You are an expert agronomy assistant helping a farmer understand their field's "
     "satellite and climate data. Here is the field data you have available:\n\n"
     "{farm_data}\n\n"
@@ -21,14 +21,30 @@ _SYSTEM_PROMPT = (
     "- Keep answers concise, practical, and in plain language."
 )
 
-# MessagesPlaceholder injects the full LangChain message history into the prompt
-_prompt = ChatPromptTemplate.from_messages([
-    ("system", _SYSTEM_PROMPT),
-    MessagesPlaceholder(variable_name="history"),
-    ("human", "{question}"),
-])
+_SYSTEM_PROMPT_HI = (
+    "आप एक विशेषज्ञ कृषि सहायक हैं जो एक किसान को उनके खेत के उपग्रह और जलवायु डेटा "
+    "को समझने में मदद कर रहे हैं। यहाँ उपलब्ध खेत का डेटा है:\n\n"
+    "{farm_data}\n\n"
+    "यहाँ किसान को पहले दिया गया सारांश है:\n{summary_text}\n\n"
+    "नियम:\n"
+    "- वर्तमान स्थितियों के लिए प्रदान किए गए खेत डेटा को तथ्यात्मक आधार के रूप में उपयोग करें।\n"
+    "- आप इस डेटा के आधार पर उपयुक्त फसलों, सिंचाई रणनीतियों और सर्वोत्तम प्रथाओं का "
+    "सुझाव देने के लिए अपने व्यापक कृषि ज्ञान का उपयोग कर सकते हैं।\n"
+    "- यदि खेती या डेटा से पूरी तरह असंबंधित कुछ पूछा जाए, तो धीरे से बातचीत को खेत "
+    "की ओर वापस मोड़ें।\n"
+    "- उत्तर संक्षिप्त, व्यावहारिक और सरल भाषा में हिंदी में दें।"
+)
 
-_chain = _prompt | llm | StrOutputParser()
+
+def _build_chain(language: str):
+    system_prompt = _SYSTEM_PROMPT_HI if language == "hi" else _SYSTEM_PROMPT_EN
+    # MessagesPlaceholder injects the full LangChain message history into the prompt
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", system_prompt),
+        MessagesPlaceholder(variable_name="history"),
+        ("human", "{question}"),
+    ])
+    return prompt | llm | StrOutputParser()
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -41,8 +57,10 @@ async def chat(req: ChatRequest):
     if history is None:
         raise HTTPException(status_code=404, detail="Chat history not found")
 
+    chain = _build_chain(req.language)
+
     try:
-        reply_text = await _chain.ainvoke({
+        reply_text = await chain.ainvoke({
             "farm_data": session["farm_data"],
             "summary_text": session["summary_text"],
             "history": history.messages,   # list[BaseMessage]

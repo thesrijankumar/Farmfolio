@@ -13,6 +13,7 @@ class SummarizeRequest(BaseModel):
     climate: dict[str, Any]
     vegetation: dict[str, Any]
     userId: str
+    language: str = "en"
 
 
 class SummarizeResponse(BaseModel):
@@ -24,6 +25,7 @@ class ChatRequest(BaseModel):
     """Matches what your Elysia /api/ask forwards."""
     sessionId: str
     question: str
+    language: str = "en"
 
 
 class ChatResponse(BaseModel):

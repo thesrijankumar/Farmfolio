@@ -9,24 +9,38 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+type Mode = "login" | "signup" | "forgot";
+
 function AuthPage() {
   const { token, setToken } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resetSent, setResetSent] = useState(false);
 
   useEffect(() => {
     if (token) navigate({ to: "/location", replace: true });
   }, [token, navigate]);
+
+  function switchMode(m: Mode) {
+    setMode(m);
+    setError(null);
+    setResetSent(false);
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
+      if (mode === "forgot") {
+        await api.forgotPassword(email);
+        setResetSent(true);
+        return;
+      }
       const res =
         mode === "login"
           ? await api.login(email, password)
@@ -87,11 +101,12 @@ function AuthPage() {
         </section>
 
         <section className="border border-border bg-card p-8 md:p-10">
+          {/* Tabs */}
           <div className="flex items-center gap-6 text-sm">
             {(["login", "signup"] as const).map((m) => (
               <button
                 key={m}
-                onClick={() => setMode(m)}
+                onClick={() => switchMode(m)}
                 className={`relative pb-2 transition-colors ${
                   mode === m
                     ? "text-[color:var(--forest-deep)]"
@@ -106,60 +121,134 @@ function AuthPage() {
             ))}
           </div>
 
-          <form onSubmit={onSubmit} className="mt-8 space-y-6">
-            <label className="block">
-              <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                Email
-              </span>
-              <input
-                type="email"
-                required
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-2 block w-full border-0 border-b border-input bg-transparent px-0 py-2 text-base focus:border-[color:var(--forest)] focus:outline-none focus:ring-0"
-                placeholder="you@farm.co"
-              />
-            </label>
-            <label className="block">
-              <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                Password
-              </span>
-              <input
-                type="password"
-                required
-                minLength={6}
-                autoComplete={mode === "login" ? "current-password" : "new-password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-2 block w-full border-0 border-b border-input bg-transparent px-0 py-2 text-base focus:border-[color:var(--forest)] focus:outline-none focus:ring-0"
-                placeholder="••••••••"
-              />
-            </label>
-
-            {error && (
-              <p className="border-l-2 border-destructive bg-destructive/5 px-3 py-2 text-sm text-destructive">
-                {error}
+          {/* Forgot password success state */}
+          {mode === "forgot" && resetSent ? (
+            <div className="mt-10 space-y-4">
+              <div className="border-l-2 border-[color:var(--forest)] bg-[color:var(--forest)]/5 px-4 py-4">
+                <p className="text-sm font-medium text-[color:var(--forest-deep)]">
+                  Reset link sent ✓
+                </p>
+                <p className="mt-1 text-sm text-foreground/70">
+                  Check your inbox — the link expires in 1 hour.
+                </p>
+              </div>
+              <button
+                onClick={() => switchMode("login")}
+                className="text-sm text-[color:var(--forest)] underline-offset-2 hover:underline"
+              >
+                ← Back to sign in
+              </button>
+            </div>
+          ) : mode === "forgot" ? (
+            /* Forgot password form */
+            <form onSubmit={onSubmit} className="mt-8 space-y-6">
+              <p className="text-sm text-foreground/70">
+                Enter your account email and we'll send a reset link.
               </p>
-            )}
+              <label className="block">
+                <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                  Email
+                </span>
+                <input
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="mt-2 block w-full border-0 border-b border-input bg-transparent px-0 py-2 text-base focus:border-[color:var(--forest)] focus:outline-none focus:ring-0"
+                  placeholder="you@farm.co"
+                />
+              </label>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="inline-flex w-full items-center justify-center rounded-sm bg-[color:var(--forest)] px-5 py-3 text-sm font-medium tracking-wide text-[color:var(--cream)] transition-colors hover:bg-[color:var(--forest-deep)] disabled:opacity-60"
-            >
-              {loading
-                ? "Working…"
-                : mode === "login"
-                  ? "Sign in"
-                  : "Create account"}
-            </button>
+              {error && (
+                <p className="border-l-2 border-destructive bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                  {error}
+                </p>
+              )}
 
-            <p className="text-xs text-muted-foreground">
-              JWT stored locally in your browser. Rotate credentials before
-              production use.
-            </p>
-          </form>
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex w-full items-center justify-center rounded-sm bg-[color:var(--forest)] px-5 py-3 text-sm font-medium tracking-wide text-[color:var(--cream)] transition-colors hover:bg-[color:var(--forest-deep)] disabled:opacity-60"
+              >
+                {loading ? "Sending…" : "Send reset link"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => switchMode("login")}
+                className="block w-full text-center text-sm text-muted-foreground hover:text-foreground"
+              >
+                ← Back to sign in
+              </button>
+            </form>
+          ) : (
+            /* Login / Signup form */
+            <form onSubmit={onSubmit} className="mt-8 space-y-6">
+              <label className="block">
+                <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                  Email
+                </span>
+                <input
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="mt-2 block w-full border-0 border-b border-input bg-transparent px-0 py-2 text-base focus:border-[color:var(--forest)] focus:outline-none focus:ring-0"
+                  placeholder="you@farm.co"
+                />
+              </label>
+              <label className="block">
+                <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                  Password
+                </span>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  autoComplete={mode === "login" ? "current-password" : "new-password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="mt-2 block w-full border-0 border-b border-input bg-transparent px-0 py-2 text-base focus:border-[color:var(--forest)] focus:outline-none focus:ring-0"
+                  placeholder="••••••••"
+                />
+              </label>
+
+              {error && (
+                <p className="border-l-2 border-destructive bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                  {error}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex w-full items-center justify-center rounded-sm bg-[color:var(--forest)] px-5 py-3 text-sm font-medium tracking-wide text-[color:var(--cream)] transition-colors hover:bg-[color:var(--forest-deep)] disabled:opacity-60"
+              >
+                {loading
+                  ? "Working…"
+                  : mode === "login"
+                    ? "Sign in"
+                    : "Create account"}
+              </button>
+
+              {mode === "login" && (
+                <button
+                  type="button"
+                  onClick={() => switchMode("forgot")}
+                  className="block w-full text-center text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Forgot password?
+                </button>
+              )}
+
+              <p className="text-xs text-muted-foreground">
+                JWT stored locally in your browser. Rotate credentials before
+                production use.
+              </p>
+            </form>
+          )}
         </section>
       </div>
     </Shell>

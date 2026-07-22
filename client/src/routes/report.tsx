@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { Loader2, ArrowRight, Languages } from "lucide-react";
+import { Loader2, ArrowRight, Languages, Mic, MicOff, Volume2, Square } from "lucide-react";
 import { api, type LandReport } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { Shell } from "../components/farmfolio/Shell";
@@ -12,7 +12,9 @@ export const Route = createFileRoute("/report")({
   component: ReportPage,
 });
 
-type Lang = "en" | "hi";
+type Lang = "en" | "hi" | "mr" | "ta" | "te";
+
+
 
 const TRANSLATIONS = {
   en: {
@@ -72,6 +74,13 @@ const TRANSLATIONS = {
     sug2: "Is irrigation likely necessary?",
     sug3: "What does the NDVI trend suggest right now?",
     langToggle: "हिन्दी",
+    micBtn: "Mic",
+    listening: "Listening…",
+    micNotSupported: "Voice input not supported in this browser",
+    readAloud: "Read aloud",
+    stopReading: "Stop",
+    noHindiVoice: "Hindi voice not available on this device",
+    translating: "Generating Hindi summary…",
   },
   hi: {
     loading: "रिपोर्ट लोड हो रही है...",
@@ -130,8 +139,325 @@ const TRANSLATIONS = {
     sug2: "क्या सिंचाई की संभावना है?",
     sug3: "NDVI प्रवृत्ति अभी क्या सुझाव देती है?",
     langToggle: "English",
-  }
+    micBtn: "माइक",
+    listening: "सुन रहा है…",
+    micNotSupported: "इस ब्राउज़र में वॉइस इनपुट उपलब्ध नहीं है",
+    readAloud: "पढ़कर सुनाएँ",
+    stopReading: "रोकें",
+    noHindiVoice: "इस डिवाइस पर हिन्दी आवाज़ उपलब्ध नहीं है",
+    translating: "हिन्दी सारांश बन रहा है…",
+  },
+  mr: {
+    loading: "अहवाल लोड होत आहे…",
+    fieldReport: "शेत अहवाल",
+    session: "सत्र",
+    climateNasa: "हवामान · NASA POWER",
+    temperature: "तापमान",
+    rainfall: "पाऊस",
+    humidity: "आर्द्रता",
+    solarRadiation: "सौर विकिरण",
+    windSpeed: "वाऱ्याचा वेग",
+    soilWaterNasa: "माती आणि पाणी · NASA POWER",
+    surfaceMoisture: "पृष्ठभागाची माती ओलावा",
+    rootMoisture: "मूळ क्षेत्राची ओलावा",
+    evapotranspiration: "बाष्पोत्सर्जन",
+    dewPoint: "दवबिंदू",
+    frostDays: "दंव दिवस / वर्ष",
+    surfaceNote: "0-1 प्रमाण (वरचा थर)",
+    rootNote: "0-1 प्रमाण (मूळ क्षेत्र)",
+    evapoNote: "माती + झाडांमधून गेलेले पाणी",
+    dewNote: "आर्द्रता संघनन उंबरठा",
+    frostNote: "सरासरी वार्षिक दंव दिवस",
+    fieldNote: "शेत नोंद",
+    agronomyAssistant: "फार्मफोलिओ कृषी सहाय्यक",
+    vegIndexNdvi: "वनस्पती निर्देशांक · NDVI · Sentinel-2",
+    nitrogenChloro: "नायट्रोजन आणि क्लोरोफिल · Sentinel-2 Red Edge",
+    nitrogenDesc: "NDRE आणि क्लोरोफिल निर्देशांक पानांच्या नायट्रोजनसाठी उपग्रह प्रॉक्सी आहेत",
+    ndreProxy: "NDRE — नायट्रोजन प्रॉक्सी",
+    chlorophyllIndex: "क्लोरोफिल निर्देशांक (Red Edge)",
+    chloroDesc: "जास्त = अधिक क्लोरोफिल = अधिक नायट्रोजन",
+    evi: "EVI — सुधारित वनस्पती",
+    eviDesc: "NDVI पेक्षा वातावरण आणि ढगांचा कमी प्रभाव",
+    waterMoistureStress: "पाणी आणि ओलावा ताण · Sentinel-2",
+    ndwi: "NDWI — छत पाणी सामग्री",
+    moistureStressIdx: "ओलावा ताण निर्देशांक (B8A/B11)",
+    askAgronomist: "कृषितज्ञाला विचारा",
+    followUp: "या अहवालावर पाठपुरावा करा.",
+    noData: "डेटा उपलब्ध नाही",
+    bare: "0.0 · रिकामे",
+    sparse: "0.3 · विरळ",
+    healthy: "0.6 · निरोगी",
+    denseCanopy: "0.9 · घनदाट छत",
+    min: "किमान",
+    mean: "सरासरी",
+    max: "कमाल",
+    deficient: "0.0 · कमतरता",
+    adequate: "0.25 · पुरेसे",
+    optimal: "0.45+ · इष्टतम",
+    noQuestions: "अजून प्रश्न नाहीत. या शेताबद्दल काहीही विचारा.",
+    you: "तुम्ही",
+    thinking: "विचार करत आहे…",
+    askPlaceholder: "या शेताबद्दल प्रश्न विचारा…",
+    askBtn: "विचारा",
+    suggested: "सुचवलेले",
+    sug1: "या हवामानासाठी कोणती पिके योग्य आहेत?",
+    sug2: "सिंचनाची गरज आहे का?",
+    sug3: "NDVI प्रवृत्ती सध्या काय सुचवते?",
+    langToggle: "मराठी",
+    micBtn: "मायक्रोफोन",
+    listening: "ऐकत आहे…",
+    micNotSupported: "या ब्राउझरमध्ये व्हॉइस इनपुट उपलब्ध नाही",
+    readAloud: "मोठ्याने वाचा",
+    stopReading: "थांबा",
+    noHindiVoice: "या डिव्हाइसवर मराठी आवाज उपलब्ध नाही",
+    translating: "मराठी सारांश तयार होत आहे…",
+  },
+  ta: {
+    loading: "அறிக்கை ஏற்றுகிறது…",
+    fieldReport: "வயல் அறிக்கை",
+    session: "அமர்வு",
+    climateNasa: "காலநிலை · NASA POWER",
+    temperature: "வெப்பநிலை",
+    rainfall: "மழைப்பொழிவு",
+    humidity: "ஈரப்பதம்",
+    solarRadiation: "சூரிய கதிர்வீச்சு",
+    windSpeed: "காற்று வேகம்",
+    soilWaterNasa: "மண் & நீர் · NASA POWER",
+    surfaceMoisture: "மேற்பரப்பு மண் ஈரப்பதம்",
+    rootMoisture: "வேர் மண்டல ஈரப்பதம்",
+    evapotranspiration: "நீராவியாதல்",
+    dewPoint: "பனித்துளி நிலை",
+    frostDays: "பனி நாட்கள் / ஆண்டு",
+    surfaceNote: "0-1 அளவு (மேல் அடுக்கு)",
+    rootNote: "0-1 அளவு (வேர் மண்டலம்)",
+    evapoNote: "மண் + தாவரங்களிலிருந்து இழந்த நீர்",
+    dewNote: "ஈரப்பத உறைநிலை வரம்பு",
+    frostNote: "சராசரி வருடாந்திர பனி நாட்கள்",
+    fieldNote: "வயல் குறிப்பு",
+    agronomyAssistant: "Farmfolio வேளாண் உதவியாளர்",
+    vegIndexNdvi: "தாவர குறியீடு · NDVI · Sentinel-2",
+    nitrogenChloro: "நைட்ரஜன் & கிளோரோபில் · Sentinel-2 Red Edge",
+    nitrogenDesc: "NDRE மற்றும் கிளோரோபில் குறியீடு இலை நைட்ரஜனுக்கான செயற்கைக்கோள் அளவீடுகள்",
+    ndreProxy: "NDRE — நைட்ரஜன் அளவீடு",
+    chlorophyllIndex: "கிளோரோபில் குறியீடு (Red Edge)",
+    chloroDesc: "அதிகம் = அதிக கிளோரோபில் = அதிக நைட்ரஜன்",
+    evi: "EVI — மேம்படுத்தப்பட்ட தாவர குறியீடு",
+    eviDesc: "NDVI ஐ விட வளிமண்டலம் & மேகங்களால் குறைந்த தாக்கம்",
+    waterMoistureStress: "நீர் & ஈரப்பத அழுத்தம் · Sentinel-2",
+    ndwi: "NDWI — மேலாடை நீர் உள்ளடக்கம்",
+    moistureStressIdx: "ஈரப்பத அழுத்த குறியீடு (B8A/B11)",
+    askAgronomist: "வேளாண் நிபுணரிடம் கேளுங்கள்",
+    followUp: "இந்த அறிக்கையை தொடர்ந்து கண்காணிக்கவும்.",
+    noData: "தரவு இல்லை",
+    bare: "0.0 · வெற்று",
+    sparse: "0.3 · மெல்லிய",
+    healthy: "0.6 · ஆரோக்கியமான",
+    denseCanopy: "0.9 · அடர்த்தியான மேலாடை",
+    min: "குறைந்தபட்சம்",
+    mean: "சராசரி",
+    max: "அதிகபட்சம்",
+    deficient: "0.0 · குறைபாடு",
+    adequate: "0.25 · போதுமான",
+    optimal: "0.45+ · உகந்த",
+    noQuestions: "இன்னும் கேள்விகள் இல்லை. இந்த வயலைப் பற்றி எதுவும் கேளுங்கள்.",
+    you: "நீங்கள்",
+    thinking: "யோசிக்கிறது…",
+    askPlaceholder: "இந்த வயலைப் பற்றி கேள்வி கேளுங்கள்…",
+    askBtn: "கேளுங்கள்",
+    suggested: "பரிந்துரை",
+    sug1: "இந்த காலநிலைக்கு எந்த பயிர்கள் ஏற்றவை?",
+    sug2: "நீர்ப்பாசனம் தேவைப்படுமா?",
+    sug3: "NDVI போக்கு இப்போது என்ன சொல்கிறது?",
+    langToggle: "தமிழ்",
+    micBtn: "மைக்",
+    listening: "கேட்கிறது…",
+    micNotSupported: "இந்த உலாவியில் குரல் உள்ளீடு ஆதரிக்கப்படவில்லை",
+    readAloud: "சத்தமாக படிக்கவும்",
+    stopReading: "நிறுத்தவும்",
+    noHindiVoice: "இந்த சாதனத்தில் தமிழ் குரல் இல்லை",
+    translating: "தமிழ் சுருக்கம் தயாரிக்கப்படுகிறது…",
+  },
+  te: {
+    loading: "నివేదిక లోడవుతోంది…",
+    fieldReport: "పొలం నివేదిక",
+    session: "సెషన్",
+    climateNasa: "వాతావరణం · NASA POWER",
+    temperature: "ఉష్ణోగ్రత",
+    rainfall: "వర్షపాతం",
+    humidity: "తేమ",
+    solarRadiation: "సౌర వికిరణం",
+    windSpeed: "గాలి వేగం",
+    soilWaterNasa: "నేల & నీరు · NASA POWER",
+    surfaceMoisture: "ఉపరితల నేల తేమ",
+    rootMoisture: "వేరు మండల తేమ",
+    evapotranspiration: "బాష్పోత్సేదనం",
+    dewPoint: "మంచు బిందువు",
+    frostDays: "మంచు రోజులు / సంవత్సరం",
+    surfaceNote: "0-1 స్కేల్ (ఉపరితల పొర)",
+    rootNote: "0-1 స్కేల్ (వేరు మండలం)",
+    evapoNote: "నేల + మొక్కల నుండి కోల్పోయిన నీరు",
+    dewNote: "తేమ ఘనీభవన అంచు",
+    frostNote: "సగటు వార్షిక మంచు రోజులు",
+    fieldNote: "పొలం గమనిక",
+    agronomyAssistant: "Farmfolio వ్యవసాయ సహాయకుడు",
+    vegIndexNdvi: "వృక్ష సూచిక · NDVI · Sentinel-2",
+    nitrogenChloro: "నత్రజని & క్లోరోఫిల్ · Sentinel-2 Red Edge",
+    nitrogenDesc: "NDRE మరియు క్లోరోఫిల్ సూచిక ఆకు నత్రజని కోసం ఉపగ్రహ కొలతలు",
+    ndreProxy: "NDRE — నత్రజని కొలత",
+    chlorophyllIndex: "క్లోరోఫిల్ సూచిక (Red Edge)",
+    chloroDesc: "ఎక్కువ = మరింత క్లోరోఫిల్ = మరింత నత్రజని",
+    evi: "EVI — మెరుగైన వృక్ష సూచిక",
+    eviDesc: "NDVI కంటే వాతావరణం & మేఘాల వల్ల తక్కువ ప్రభావం",
+    waterMoistureStress: "నీరు & తేమ ఒత్తిడి · Sentinel-2",
+    ndwi: "NDWI — ఆచ్ఛాదన నీటి పరిమాణం",
+    moistureStressIdx: "తేమ ఒత్తిడి సూచిక (B8A/B11)",
+    askAgronomist: "వ్యవసాయ నిపుణుడిని అడగండి",
+    followUp: "ఈ నివేదికను అనుసరించండి.",
+    noData: "డేటా అందుబాటులో లేదు",
+    bare: "0.0 · బోడి",
+    sparse: "0.3 · అరుదు",
+    healthy: "0.6 · ఆరోగ్యకరమైన",
+    denseCanopy: "0.9 · దట్టమైన పందిరి",
+    min: "కనిష్ఠం",
+    mean: "సగటు",
+    max: "గరిష్ఠం",
+    deficient: "0.0 · లోటు",
+    adequate: "0.25 · తగినంత",
+    optimal: "0.45+ · అనుకూలమైన",
+    noQuestions: "ఇంకా ప్రశ్నలు లేవు. ఈ పొలం గురించి ఏదైనా అడగండి.",
+    you: "మీరు",
+    thinking: "ఆలోచిస్తోంది…",
+    askPlaceholder: "ఈ పొలం గురించి ప్రశ్న అడగండి…",
+    askBtn: "అడగండి",
+    suggested: "సూచించబడినవి",
+    sug1: "ఈ వాతావరణానికి ఏ పంటలు సరిపోతాయి?",
+    sug2: "నీటిపారుదల అవసరమా?",
+    sug3: "NDVI ధోరణి ఇప్పుడు ఏమి సూచిస్తోంది?",
+    langToggle: "తెలుగు",
+    micBtn: "మైక్",
+    listening: "వింటోంది…",
+    micNotSupported: "ఈ బ్రౌజర్‌లో వాయిస్ ఇన్‌పుట్ మద్దతు లేదు",
+    readAloud: "声に出して読む",
+    stopReading: "ఆపండి",
+    noHindiVoice: "ఈ పరికరంలో తెలుగు గొంతు అందుబాటులో లేదు",
+    translating: "తెలుగు సారాంశం తయారవుతోంది…",
+  },
 } as const;
+
+
+
+// ── Speech Recognition Hook ──────────────────────────────────────────────────
+type SpeechRecognitionHook = {
+  isSupported: boolean;
+  isListening: boolean;
+  start: (lang: string, onResult: (text: string) => void) => void;
+  stop: () => void;
+};
+
+function useSpeechRecognition(): SpeechRecognitionHook {
+  const SRConstructor =
+    typeof window !== "undefined"
+      ? (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition
+      : null;
+  // Speech API also requires a secure context (HTTPS/localhost) on mobile
+  const isSecure = typeof window === "undefined" || window.isSecureContext;
+  const isSupported = Boolean(SRConstructor) && isSecure;
+  const [isListening, setIsListening] = useState(false);
+  const recRef = useRef<any>(null);
+
+  const stop = useCallback(() => {
+    recRef.current?.stop();
+    setIsListening(false);
+  }, []);
+
+  const start = useCallback(
+    (lang: string, onResult: (text: string) => void) => {
+      if (!SRConstructor || isListening) return;
+
+      // Guard: browser API exists but page is not on HTTPS/localhost
+      if (!window.isSecureContext) {
+        toast.error("Microphone requires HTTPS. Open the app via a secure URL.");
+        return;
+      }
+
+      const rec = new SRConstructor();
+      rec.lang = lang;
+      rec.continuous = false;
+      rec.interimResults = true;
+      rec.onresult = (e: any) => {
+        let transcript = "";
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          transcript += e.results[i][0].transcript;
+        }
+        onResult(transcript);
+      };
+      rec.onerror = (e: any) => {
+        setIsListening(false);
+        const code: string = e?.error ?? "unknown";
+        if (code === "not-allowed") {
+          toast.error("Microphone access denied. Allow mic permission in your browser settings.");
+        } else if (code === "network") {
+          toast.error("Speech recognition needs a network connection.");
+        } else if (code === "no-speech") {
+          // silent — user just didn't say anything
+        } else if (code !== "aborted") {
+          toast.error(`Microphone error: ${code}`);
+        }
+      };
+      rec.onend = () => setIsListening(false);
+      recRef.current = rec;
+      rec.start();
+      setIsListening(true);
+    },
+    [SRConstructor, isListening]
+  );
+
+  return { isSupported, isListening, start, stop };
+}
+
+// ── Speech Synthesis Hook ────────────────────────────────────────────────────
+type SpeakResult = { noHindiVoice?: boolean };
+type SpeechSynthesisHook = {
+  isSupported: boolean;
+  isSpeaking: boolean;
+  speak: (text: string, lang: string) => SpeakResult;
+  stop: () => void;
+};
+
+function useSpeechSynthesis(): SpeechSynthesisHook {
+  const isSupported = typeof window !== "undefined" && "speechSynthesis" in window;
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  const stop = useCallback(() => {
+    if (isSupported) window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+  }, [isSupported]);
+
+  const speak = useCallback(
+    (text: string, lang: string): SpeakResult => {
+      if (!isSupported) return {};
+      window.speechSynthesis.cancel();
+
+      // For Hindi, verify a voice exists first
+      if (lang === "hi-IN") {
+        const voices = window.speechSynthesis.getVoices();
+        const hasHindi = voices.some((v) => v.lang.startsWith("hi"));
+        if (!hasHindi) return { noHindiVoice: true };
+      }
+
+      const utt = new SpeechSynthesisUtterance(text);
+      utt.lang = lang;
+      utt.onstart = () => setIsSpeaking(true);
+      utt.onend = () => setIsSpeaking(false);
+      utt.onerror = () => setIsSpeaking(false);
+      window.speechSynthesis.speak(utt);
+      return {};
+    },
+    [isSupported]
+  );
+
+  return { isSupported, isSpeaking, speak, stop };
+}
 
 type Msg = { role: "user" | "assistant"; text: string };
 
@@ -178,28 +504,61 @@ function ReportView({ report, token, lang, setLang }: { report: LandReport; toke
 
   const [translatedSummary, setTranslatedSummary] = useState<string | null>(null);
   const [translatingSummary, setTranslatingSummary] = useState(false);
+  // TTS
+  const tts = useSpeechSynthesis();
+  const [noHindiVoice, setNoHindiVoice] = useState(false);
 
+  // Fetch translated summary for any non-English language
   useEffect(() => {
-    setTranslatedSummary(null);
+    if (lang !== "en" && !translatedSummary && !translatingSummary) {
+      setTranslatingSummary(true);
+      const langPrompt: Record<string, string> = {
+        hi: "इस खेत का सारांश हिंदी में दें। (Summarise this field's current conditions in Hindi, 3–5 sentences, plain language, no advice.)",
+        mr: "या शेताचा सारांश मराठीत द्या. (Summarise this field's current conditions in Marathi, 3–5 sentences, plain language, no advice.)",
+        ta: "இந்த வயலின் தற்போதைய நிலையை தமிழில் சுருக்கமாக கூறுங்கள், 3-5 வாக்கியங்கள். (Summarise in Tamil, 3–5 sentences, plain language.)",
+        te: "ఈ పొలం యొక్క ప్రస్తుత పరిస్థితిని తెలుగులో సంగ్రహంగా చెప్పండి, 3-5 వాక్యాలు. (Summarise in Telugu, 3–5 sentences.)",
+      };
+      fetch(`${import.meta.env.VITE_API_URL ?? "http://localhost:3000"}/api/ask`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          sessionId,
+          question: langPrompt[lang] ?? langPrompt.hi,
+          language: lang,
+        }),
+      })
+        .then((r) => r.json())
+        .then(({ reply }) => setTranslatedSummary(reply))
+        .catch(() => toast.error("Could not generate translated summary"))
+        .finally(() => setTranslatingSummary(false));
+    }
+    // Stop any ongoing speech when language changes
+    tts.stop();
+    setNoHindiVoice(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
-  async function handleTranslateSummary() {
-    if (translatingSummary) return;
-    setTranslatingSummary(true);
-    try {
-      const prompt = lang === "hi"
-        ? `Translate the following agricultural field summary to Hindi: "${summary}"`
-        : `Translate the following agricultural field summary to English: "${summary}"`;
-      const { reply } = await api.ask(token, sessionId, prompt);
-      setTranslatedSummary(reply);
-    } catch (err) {
-      toast.error("Could not translate summary");
-    } finally {
-      setTranslatingSummary(false);
-    }
-  }
+  const displaySummary = (lang !== "en" ? translatedSummary : null) ?? summary;
 
-  const displaySummary = translatedSummary || summary;
+  const SPEECH_LANG: Record<Lang, string> = {
+    en: "en-US",
+    hi: "hi-IN",
+    mr: "mr-IN",
+    ta: "ta-IN",
+    te: "te-IN",
+  };
+
+  function handleReadAloud() {
+    if (tts.isSpeaking) {
+      tts.stop();
+      return;
+    }
+    const result = tts.speak(displaySummary, SPEECH_LANG[lang]);
+    if (result.noHindiVoice) setNoHindiVoice(true);
+  }
 
   const climateStats = useMemo(
     () => [
@@ -262,14 +621,14 @@ function ReportView({ report, token, lang, setLang }: { report: LandReport; toke
     : "text-red-600";
 
   return (
-    <div className={`mx-auto max-w-6xl px-6 py-14 ${lang === "hi" ? "font-hi" : ""}`}>
+    <div className={`mx-auto max-w-6xl px-6 py-14 ${lang !== "en" ? "font-regional" : ""}`}>
       <style>{`
-        .font-hi .text-\\[10px\\] { font-size: 13px !important; }
-        .font-hi .text-\\[11px\\] { font-size: 14px !important; }
-        .font-hi .text-xs { font-size: 15px !important; }
-        .font-hi .text-sm { font-size: 16px !important; }
-        .font-hi .text-base { font-size: 18px !important; }
-        .font-hi p, .font-hi span, .font-hi div, .font-hi button { letter-spacing: 0.02em; }
+        .font-regional .text-\\[10px\\] { font-size: 13px !important; }
+        .font-regional .text-\\[11px\\] { font-size: 14px !important; }
+        .font-regional .text-xs { font-size: 15px !important; }
+        .font-regional .text-sm { font-size: 16px !important; }
+        .font-regional .text-base { font-size: 18px !important; }
+        .font-regional p, .font-regional span, .font-regional div, .font-regional button { letter-spacing: 0.02em; }
       `}</style>
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-6">
@@ -278,19 +637,63 @@ function ReportView({ report, token, lang, setLang }: { report: LandReport; toke
             <p className="text-[11px] uppercase tracking-[0.24em] text-[color:var(--forest)]">
               {t.fieldReport}
             </p>
-            <button 
-              onClick={() => setLang(lang === "en" ? "hi" : "en")}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-[10px] uppercase tracking-widest text-muted-foreground transition-colors hover:bg-muted"
-            >
-              <Languages className="h-3 w-3" />
-              {t.langToggle}
-            </button>
+            {/* Language selector — custom styled pill */}
+            <div className="relative">
+              <select
+                value={lang}
+                onChange={(e) => {
+                  setTranslatedSummary(null);
+                  setLang(e.target.value as Lang);
+                }}
+                style={{
+                  background: "var(--cream)",
+                  border: "1px solid var(--forest)",
+                  color: "var(--forest-deep)",
+                  borderRadius: "999px",
+                  paddingLeft: "2rem",
+                  paddingRight: "1.75rem",
+                  paddingTop: "0.3rem",
+                  paddingBottom: "0.3rem",
+                  fontSize: "11px",
+                  fontFamily: "inherit",
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  fontWeight: 500,
+                  appearance: "none",
+                  cursor: "pointer",
+                  outline: "none",
+                  boxShadow: "0 0 0 0 transparent",
+                  transition: "box-shadow 0.15s, background 0.15s",
+                }}
+                onFocus={(e) => (e.currentTarget.style.boxShadow = "0 0 0 3px rgba(45,106,79,0.18)")}
+                onBlur={(e) => (e.currentTarget.style.boxShadow = "none")}
+              >
+                <option value="en">English</option>
+                <option value="hi">हिन्दी</option>
+                <option value="mr">मराठी</option>
+                <option value="ta">தமிழ்</option>
+                <option value="te">తెలుగు</option>
+              </select>
+              {/* Globe icon */}
+              <Languages
+                className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3"
+                style={{ color: "var(--forest)" }}
+              />
+              {/* Custom chevron */}
+              <svg
+                className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2"
+                width="10" height="10" viewBox="0 0 10 10" fill="none"
+                style={{ color: "var(--forest)" }}
+              >
+                <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
           </div>
           <h1 className="mt-3 font-serif text-4xl leading-tight tracking-tight text-[color:var(--forest-deep)] md:text-5xl">
             {location.lat.toFixed(4)}°, {location.lon.toFixed(4)}°
           </h1>
         </div>
-        <p className="stat-num text-sm text-muted-foreground">
+        <p className="stat-num hidden text-sm text-muted-foreground">
           {t.session} · <span className="text-foreground/70">{sessionId.slice(0, 8)}</span>
         </p>
       </div>
@@ -353,25 +756,40 @@ function ReportView({ report, token, lang, setLang }: { report: LandReport; toke
           <div className="text-[11px] uppercase tracking-[0.24em] text-[color:var(--forest)]">
             {t.fieldNote}
           </div>
-          {lang === "hi" && !translatedSummary && (
-            <button
-              onClick={handleTranslateSummary}
-              disabled={translatingSummary}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-[10px] uppercase tracking-widest text-muted-foreground transition-colors hover:bg-muted"
-            >
-              {translatingSummary ? <Loader2 className="h-3 w-3 animate-spin" /> : <Languages className="h-3 w-3" />}
-              अनुवाद करें (Translate)
-            </button>
+          {translatingSummary && (
+            <p className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              {t.translating}
+            </p>
           )}
         </div>
-        <blockquote className="border-l-2 border-[color:var(--forest)] pl-6">
-          <p className="font-serif text-2xl leading-snug tracking-tight text-[color:var(--forest-deep)] md:text-3xl">
-            &ldquo;{displaySummary}&rdquo;
-          </p>
-          <footer className="mt-4 text-xs uppercase tracking-widest text-muted-foreground">
-            {t.agronomyAssistant}
-          </footer>
-        </blockquote>
+        <div>
+          <blockquote className="border-l-2 border-[color:var(--forest)] pl-6">
+            <p className="font-serif text-2xl leading-snug tracking-tight text-[color:var(--forest-deep)] md:text-3xl">
+              &ldquo;{displaySummary}&rdquo;
+            </p>
+            <footer className="mt-4 text-xs uppercase tracking-widest text-muted-foreground">
+              {t.agronomyAssistant}
+            </footer>
+          </blockquote>
+          {/* TTS controls */}
+          <div className="mt-4 flex items-center gap-3 pl-6">
+            {tts.isSupported && (
+              <button
+                onClick={handleReadAloud}
+                disabled={lang === "hi" && !translatedSummary}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-[10px] uppercase tracking-widest text-muted-foreground transition-colors hover:bg-muted disabled:opacity-40"
+              >
+                {tts.isSpeaking
+                  ? <><Square className="h-3 w-3" />{t.stopReading}</>
+                  : <><Volume2 className="h-3 w-3" />{t.readAloud}</>}
+              </button>
+            )}
+            {noHindiVoice && (
+              <p className="text-[10px] text-amber-700">{t.noHindiVoice}</p>
+            )}
+          </div>
+        </div>
       </section>
 
       {/* ── NDVI ────────────────────────────────────────────────────── */}
@@ -608,10 +1026,27 @@ function ChatPanel({ token, sessionId, lang }: { token: string; sessionId: strin
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const speech = useSpeechRecognition();
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, pending]);
+
+  function handleMicClick() {
+    if (speech.isListening) {
+      speech.stop();
+      return;
+    }
+    const SPEECH_MIC_LANG: Record<Lang, string> = {
+      en: "en-US",
+      hi: "hi-IN",
+      mr: "mr-IN",
+      ta: "ta-IN",
+      te: "te-IN",
+      mai: "hi-IN",
+    };
+    speech.start(SPEECH_MIC_LANG[lang], (text) => setInput(text));
+  }
 
   async function onSend(e: FormEvent) {
     e.preventDefault();
@@ -621,8 +1056,7 @@ function ChatPanel({ token, sessionId, lang }: { token: string; sessionId: strin
     setMessages((m) => [...m, { role: "user", text: q }]);
     setPending(true);
     try {
-      const prompt = lang === "hi" ? `${q} (Please reply in Hindi / कृपया हिंदी में उत्तर दें)` : q;
-      const { reply } = await api.ask(token, sessionId, prompt);
+      const { reply } = await api.ask(token, sessionId, q, lang);
       setMessages((m) => [...m, { role: "assistant", text: reply }]);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Could not send";
@@ -686,10 +1120,34 @@ function ChatPanel({ token, sessionId, lang }: { token: string; sessionId: strin
         </div>
 
         <form onSubmit={onSend} className="mt-8 flex items-center gap-3 border-t border-border pt-4">
+          {/* Mic button */}
+          {speech.isSupported ? (
+            <button
+              type="button"
+              onClick={handleMicClick}
+              title={speech.isListening ? t.listening : t.micBtn}
+              className={`flex-shrink-0 rounded-full p-1.5 transition-colors ${
+                speech.isListening
+                  ? "bg-red-100 text-red-600 animate-pulse"
+                  : "text-muted-foreground hover:text-[color:var(--forest)]"
+              }`}
+            >
+              {speech.isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled
+              title={t.micNotSupported}
+              className="flex-shrink-0 rounded-full p-1.5 text-muted-foreground/30 cursor-not-allowed"
+            >
+              <MicOff className="h-4 w-4" />
+            </button>
+          )}
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={t.askPlaceholder}
+            placeholder={speech.isListening ? t.listening : t.askPlaceholder}
             className="flex-1 border-0 bg-transparent px-0 py-2 text-base placeholder:text-muted-foreground focus:outline-none focus:ring-0"
           />
           <button

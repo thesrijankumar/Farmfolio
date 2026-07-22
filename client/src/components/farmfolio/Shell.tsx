@@ -14,7 +14,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <span className="font-serif text-2xl tracking-tight text-[color:var(--forest-deep)]">
               Farmfolio
             </span>
-            <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            <span className="text-[10px] hidden uppercase tracking-[0.2em] text-muted-foreground">
               Field intelligence
             </span>
           </Link>

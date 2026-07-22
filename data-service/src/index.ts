@@ -6,6 +6,7 @@ import { getNasaPowerData } from "./services/nasaPower";
 import { getNdvi } from "./services/sentinelHub";
 import { authRoutes } from "./auth/auth.routes";
 import { authGuard } from "./auth/auth.middleware";
+import { sendReportEmail } from "./services/email.service";
 
 interface SummarizeResponse {
   summary: string;
@@ -48,13 +49,20 @@ new Elysia()
         const agentRes = await fetch(`${AGENT_SERVICE_URL}/summarize`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(farmData),
+          // Always generate initial summary in English; language switching handled
+          // on the frontend after the report loads.
+          body: JSON.stringify({ ...farmData, language: "en" }),
           signal: AbortSignal.timeout(8000),
         });
 
         if (agentRes.ok) {
           const { summary, sessionId } = (await agentRes.json()) as SummarizeResponse;
-          return { rawData: farmData, summary, sessionId };
+          const result = { rawData: farmData, summary, sessionId };
+          // Fire report email — non-blocking, never delays the response
+          sendReportEmail(user.email, farmData, sessionId).catch((e) =>
+            console.error("Report email failed:", e)
+          );
+          return result;
         }
       } catch {
         // agent service not available — return raw data only
@@ -89,7 +97,14 @@ new Elysia()
         return { error: "Agent service unavailable", detail: err.message };
       }
     },
-    { body: t.Object({ sessionId: t.String(), question: t.String() }) }
+    {
+      body: t.Object({
+        sessionId: t.String(),
+        question: t.String(),
+        // Optional language field — passed through to agent-service as-is
+        language: t.Optional(t.String()),
+      }),
+    }
   )
 
   .listen(process.env.PORT ?? 3000);

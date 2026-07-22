@@ -9,11 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResetRouteImport } from './routes/reset'
 import { Route as ReportRouteImport } from './routes/report'
 import { Route as LocationRouteImport } from './routes/location'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 
+const ResetRoute = ResetRouteImport.update({
+  id: '/reset',
+  path: '/reset',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReportRoute = ReportRouteImport.update({
   id: '/report',
   path: '/report',
@@ -40,12 +46,14 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/location': typeof LocationRoute
   '/report': typeof ReportRoute
+  '/reset': typeof ResetRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/location': typeof LocationRoute
   '/report': typeof ReportRoute
+  '/reset': typeof ResetRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,14 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/location': typeof LocationRoute
   '/report': typeof ReportRoute
+  '/reset': typeof ResetRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/location' | '/report'
+  fullPaths: '/' | '/auth' | '/location' | '/report' | '/reset'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/location' | '/report'
-  id: '__root__' | '/' | '/auth' | '/location' | '/report'
+  to: '/' | '/auth' | '/location' | '/report' | '/reset'
+  id: '__root__' | '/' | '/auth' | '/location' | '/report' | '/reset'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,10 +76,18 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   LocationRoute: typeof LocationRoute
   ReportRoute: typeof ReportRoute
+  ResetRoute: typeof ResetRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/reset': {
+      id: '/reset'
+      path: '/reset'
+      fullPath: '/reset'
+      preLoaderRoute: typeof ResetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/report': {
       id: '/report'
       path: '/report'
@@ -107,6 +124,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   LocationRoute: LocationRoute,
   ReportRoute: ReportRoute,
+  ResetRoute: ResetRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

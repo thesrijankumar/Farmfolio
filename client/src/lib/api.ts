@@ -85,13 +85,56 @@ export const api = {
       body: JSON.stringify({ lat, lon }),
     }).then((r) => handle<LandReport>(r)),
 
-  ask: (token: string, sessionId: string, question: string) =>
+  /**
+   * Send a chat message to the agronomy assistant.
+   * @param language - "en" | "hi" — instructs the agent to reply in that language
+   */
+  ask: (token: string, sessionId: string, question: string, language: "en" | "hi" = "en") =>
     fetch(`${API_BASE}/api/ask`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
         authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ sessionId, question }),
+      body: JSON.stringify({ sessionId, question, language }),
     }).then((r) => handle<{ reply: string }>(r)),
+
+  /**
+   * Re-fetch the AI summary in a specific language.
+   * Used when the user switches the language toggle on the report page.
+   */
+  summarizeInLanguage: (token: string, sessionId: string, language: "en" | "hi") =>
+    // We re-use the /api/ask endpoint with a translation question scoped to the language.
+    // The agent-service system prompt is already set to the correct language via `language`.
+    fetch(`${API_BASE}/api/ask`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        sessionId,
+        question:
+          language === "hi"
+            ? "इस खेत का सारांश हिंदी में दें। (Summarise this field's current conditions in Hindi, 3–5 sentences, plain language, no advice.)"
+            : "Summarise this field's current conditions in English in 3–5 plain-language sentences. No advice, just description.",
+        language,
+      }),
+    }).then((r) => handle<{ reply: string }>(r)),
+
+  /** Send a password-reset email. Always resolves (never reveals if email exists). */
+  forgotPassword: (email: string) =>
+    fetch(`${API_BASE}/api/auth/forgot-password`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email }),
+    }).then((r) => handle<{ ok: boolean }>(r)),
+
+  /** Set a new password using the token from the reset email. */
+  resetPassword: (token: string, password: string) =>
+    fetch(`${API_BASE}/api/auth/reset-password`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token, password }),
+    }).then((r) => handle<{ ok: boolean }>(r)),
 };

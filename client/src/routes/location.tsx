@@ -122,19 +122,49 @@ function LocationPage() {
 
         <div className="mt-12 grid gap-12 md:grid-cols-[1.2fr_1fr]">
           <form onSubmit={onSubmit} className="space-y-8">
-            <button
-              type="button"
-              onClick={useMyLocation}
-              disabled={geoLoading}
-              className="group inline-flex items-center gap-3 border border-[color:var(--forest)] px-5 py-3 text-sm text-[color:var(--forest-deep)] transition-colors hover:bg-[color:var(--forest)] hover:text-[color:var(--cream)] disabled:opacity-60"
-            >
+            <div className="relative inline-flex">
+              {/* Sonar rings — 3 staggered expanding rings */}
+              {!geoLoading && (
+                <>
+                  {[0, 0.75, 1.5].map((delay) => (
+                    <span
+                      key={delay}
+                      aria-hidden
+                      style={{
+                        position: "absolute",
+                        inset: -2,
+                        border: "2px solid #2D6A4F",
+                        borderRadius: 1,
+                        animation: `loc-ring-expand 2.25s ease-out ${delay}s infinite`,
+                        pointerEvents: "none",
+                      }}
+                    />
+                  ))}
+                </>
+              )}
+              <button
+                type="button"
+                onClick={useMyLocation}
+                disabled={geoLoading}
+                style={
+                  geoLoading
+                    ? undefined
+                    : {
+                        boxShadow:
+                          "0 0 0 2px rgba(45,106,79,0.25), 0 0 18px 4px rgba(45,106,79,0.18)",
+                      }
+                }
+                className="relative group inline-flex items-center gap-3 border border-[color:var(--forest)] px-5 py-3 text-sm text-[color:var(--forest-deep)] transition-colors hover:bg-[color:var(--forest)] hover:text-[color:var(--cream)] disabled:opacity-60"
+              >
+
               {geoLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <LocateFixed className="h-4 w-4" />
               )}
               Use my location
-            </button>
+              </button>
+            </div>
 
             <div className="rule-t pt-8">
               <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
