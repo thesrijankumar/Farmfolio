@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY ?? "");
-const FROM = "Farmfolio <onboarding@resend.dev>";
+const FROM = "Farmfolio <info@farmfolio.website>";
 
 // ── Password reset ──────────────────────────────────────────────────────────
 export async function sendResetEmail(to: string, resetUrl: string) {

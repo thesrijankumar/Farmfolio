@@ -16,7 +16,7 @@ interface SummarizeResponse {
 const AGENT_SERVICE_URL = process.env.AGENT_SERVICE_URL ?? "http://localhost:8001";
 
 new Elysia()
-  .use(cors())
+  .use(cors({ origin: true, credentials: true }))
 
   // ── Public routes (no auth required) ─────────────────────────────────────
   .use(authRoutes)
