@@ -1,0 +1,27 @@
+{
+  "name": "data-service",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun --hot src/index.ts",
+    "start": "bun src/index.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "better-sqlite3": "^12.11.1",
+    "drizzle-kit": "^0.31.10"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@elysiajs/cors": "^1.4.2",
+    "@elysiajs/jwt": "^1.4.2",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.45.2",
+    "elysia": "^1.4.29",
+    "postgres": "^3.4.9",
+    "resend": "^6.18.0"
+  }
+}
